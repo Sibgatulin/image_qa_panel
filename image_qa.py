@@ -2,9 +2,9 @@ import panel as pn
 import holoviews as hv
 from pathlib import Path
 from functools import partial
-from typing import Iterable, Union, Optional
+from typing import Optional
 
-# some of the sizing parameters, did not come up with a better place :shurg:
+# some of the sizing parameters, did not come up with a better place 🤷
 N_UNC = 30
 N_CAT = 10
 
@@ -42,19 +42,21 @@ class Server:
 
     def select(self, store: str, filename: Optional[str] = None) -> None:
         """ Logic of selection from any list (categorised or not) """
-        # If selection interupts categorisation, the current filename
+        # If selection interrupts categorisation, the current filename
         # needs to be returned to the source store
         if self.current_filename is not None:
             self.stash_current()
 
         # Newly selected needs to be removed from the queried source
         # Two options possible:
-        # After categorisation an image is requested (practically only from the uncategorised source)
+        # After categorisation an image is requested
+        # (practically only from the uncategorised source)
         if filename is None:
             # pop closest
             try:
                 filename = self.stores[store].pop(0)  # the item is removed
-            # automatic query of the next image throws IndexError once self.SOURCE is exhosted
+            # automatic query of the next image throws IndexError
+            # once self.SOURCE is exhorted
             except IndexError:
                 pass
         # Or a specific image from a specific list was selected
@@ -75,8 +77,10 @@ class Server:
         # indicate that the stage is free
         self.current_filename = None
 
-    def categorise(self, target_store):
-        """ Once target category is selected place the image there and prepare the next """
+    def categorise(self, target_store: str):
+        """Once target category is selected place the image there
+        and prepare the next
+        """
         # Cannot categorise if nothing selected. Should not happen, but will
         # if .select(self.SOURCE) not called after __init__ TODO: improve
         assert self.current_filename is not None, "what'ya categorising there?"
@@ -97,9 +101,9 @@ class Client:
 
     def __init__(self, server):
         self.server = server
-        self.server.select(
-            self.server.SOURCE
-        )  # init the stage with the first image (could be done in Server().__init__ actually)
+        # init the stage with the first image
+        # (could be done in Server().__init__ actually)
+        self.server.select(self.server.SOURCE)
 
         self.n_total = len(server.filenames)  # for progress bar
         self.target_catetories = [
@@ -117,7 +121,7 @@ class Client:
         # LHS selection
         self.select[server.SOURCE].options = server.filenames
         self.select[server.SOURCE].size = N_UNC
-        # Attach callbacks to each selecttion
+        # Attach callbacks to each selection
         for cat in server.stores:
             callback = partial(self.select_filename, source_category=cat)
             self.select[cat].param.watch(callback, ["value"])
@@ -130,23 +134,24 @@ class Client:
             callback = partial(self.categorise, target_category=cat)
             self.buttons[cat].on_click(callback)
 
-        # the following is updated manually in select_filename and categorise but maybe
-        # it is possible to attach a callback to listen to the change in self.server.current_filename :shrug:
+        # the following is updated manually in select_filename and categorise
+        # maybe it is possible to attach a callback to listen to the change
+        # in self.server.current_filename 🤔
         self.info = pn.widgets.StaticText(value=self.server.current_filename)
         self.pbar = pn.widgets.Progress(value=0, name="Progress", width=100)
 
-    def select_filename(self, event, source_category):
-        """ Thin wraper around server.select which connects to a given pn.Select """
+    def select_filename(self, event, source_category: str):
+        """ Thin wrapper around server.select which connects to a given pn.Select """
         self.server.select(source_category, filename=self.select[source_category].value)
         # update the info
         self.info.value = self.server.current_filename
 
-        # THIS falis the :( Because such update does not trigger the widget to be redrawn
-        # and the options are not changed unless the cell is reexecuted or panel is forced to redraw
+        # THIS fails the :( Such update does not trigger the widget to be redrawn
+        # and the options are not changed unless the cell is rerun
         self.select[source_category].options = self.server.stores[source_category]
 
-    def categorise(self, event, target_category):
-        """ Thin wraper around server.categorise """
+    def categorise(self, event, target_category: str):
+        """ Thin wrapper around server.categorise """
         self.server.categorise(target_category)
 
         # TODO: fix the indexing here, something is off by one at the end
@@ -155,7 +160,7 @@ class Client:
             / self.n_total
             * 100
         )
-        if self.server.stores[self.server.SOURCE]:  # not exhousted
+        if self.server.stores[self.server.SOURCE]:  # not exhausted
             self.info.value = self.server.current_filename
         else:
             self.info.value = "done here"
